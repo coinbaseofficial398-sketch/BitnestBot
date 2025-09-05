@@ -1,5 +1,4 @@
 import { useQuery } from "@tanstack/react-query";
-import LiveStats from "@/components/LiveStats";
 import BotCommands from "@/components/BotCommands";
 import ChatSimulator from "@/components/ChatSimulator";
 import ProductsSection from "@/components/ProductsSection";
@@ -10,17 +9,7 @@ import SocialLinks from "@/components/SocialLinks";
 import { Button } from "@/components/ui/button";
 import { Box, Forward } from "lucide-react";
 
-interface BotStats {
-  participants: number;
-  participantIncome: string;
-  liquidity: string;
-}
-
 export default function Dashboard() {
-  const { data: stats, isLoading } = useQuery<BotStats>({
-    queryKey: ["/api/bot/stats"],
-    refetchInterval: 30000, // Refresh every 30 seconds
-  });
 
   return (
     <div className="bg-background text-foreground min-h-screen">
@@ -59,10 +48,7 @@ export default function Dashboard() {
       </header>
 
       <div className="container mx-auto px-4 py-8">
-        {/* Live Stats */}
-        <LiveStats stats={stats} isLoading={isLoading} />
-
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mt-8">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Bot Commands */}
           <BotCommands />
           
