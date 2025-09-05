@@ -50,6 +50,14 @@ export class WalletService {
   }
 
   async connectWallet(userId: string, walletType: string, address: string, chainId: number = 1): Promise<WalletConnection> {
+    // Validate the wallet connection
+    if (!await this.validateWalletAddress(address)) {
+      throw new Error('Invalid wallet address provided');
+    }
+
+    // Log the connection attempt for debugging
+    console.log(`Wallet connection attempt: ${walletType} - ${address}`);
+
     const connection: WalletConnection = {
       address,
       chainId,
@@ -58,6 +66,10 @@ export class WalletService {
     };
 
     this.connections.set(userId, connection);
+    
+    // Log successful connection
+    console.log(`Wallet connected successfully: ${walletType} for user ${userId}`);
+    
     return connection;
   }
 

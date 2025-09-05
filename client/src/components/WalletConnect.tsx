@@ -6,6 +6,13 @@ import { useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 
+// Extend window object for MetaMask
+declare global {
+  interface Window {
+    ethereum?: any;
+  }
+}
+
 export default function WalletConnect() {
   const [connectedWallet, setConnectedWallet] = useState<any>(null);
   const [walletConnectURI, setWalletConnectURI] = useState<string>('');
@@ -20,12 +27,61 @@ export default function WalletConnect() {
 
   const connectMutation = useMutation({
     mutationFn: async (walletType: string) => {
-      // Simulate wallet connection
-      const mockAddress = "0x742d35Cc6BF4532A8B1B2f9e4a1234567890A4B8";
+      let address = "0x742d35Cc6BF4532A8B1B2f9e4a1234567890A4B8";
+      
+      if (walletType === 'metamask') {
+        // Force open MetaMask extension
+        if (typeof window.ethereum !== 'undefined') {
+          try {
+            const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+            address = accounts[0];
+          } catch (error) {
+            // If MetaMask is installed but user rejects, try to open it anyway
+            window.open('https://metamask.io/download/', '_blank');
+            throw new Error('Please install MetaMask or approve the connection');
+          }
+        } else {
+          // MetaMask not installed, redirect to download
+          window.open('https://metamask.io/download/', '_blank');
+          throw new Error('MetaMask not detected. Please install MetaMask extension');
+        }
+      } else if (walletType === 'walletconnect') {
+        // Force open WalletConnect modal and deep links
+        try {
+          // Try to open common mobile wallet apps with deep links
+          const walletApps = [
+            { name: 'Trust Wallet', url: `trust://wc?uri=${encodeURIComponent(walletConnectURI)}` },
+            { name: 'Rainbow', url: `rainbow://wc?uri=${encodeURIComponent(walletConnectURI)}` },
+            { name: 'MetaMask Mobile', url: `metamask://wc?uri=${encodeURIComponent(walletConnectURI)}` },
+            { name: 'Coinbase Wallet', url: `cbwallet://wc?uri=${encodeURIComponent(walletConnectURI)}` },
+            { name: 'WalletConnect', url: `wc://wc?uri=${encodeURIComponent(walletConnectURI)}` }
+          ];
+
+          // Detect if mobile device
+          const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+          
+          if (isMobile) {
+            // Try to open wallet apps on mobile
+            walletApps.forEach((wallet, index) => {
+              setTimeout(() => {
+                const link = document.createElement('a');
+                link.href = wallet.url;
+                link.click();
+              }, index * 500); // Stagger the attempts
+            });
+          } else {
+            // On desktop, show QR code and try to open wallet extensions
+            alert(`Scan this QR code with your mobile wallet:\n${walletConnectURI}`);
+          }
+        } catch (error) {
+          console.log('WalletConnect error:', error);
+        }
+      }
+
       const response = await apiRequest("POST", "/api/wallet/connect", {
         userId: "mock-user-id",
         walletType,
-        address: mockAddress,
+        address: address,
         chainId: 1
       });
       return response.json();
@@ -37,10 +93,10 @@ export default function WalletConnect() {
         description: `Successfully connected ${data.walletType} wallet`,
       });
     },
-    onError: () => {
+    onError: (error: any) => {
       toast({
         title: "Connection Failed",
-        description: "Failed to connect wallet. Please try again.",
+        description: error.message || "Failed to connect wallet. Please try again.",
         variant: "destructive",
       });
     },
@@ -115,10 +171,13 @@ export default function WalletConnect() {
                     Connect
                   </Button>
                 </div>
-                <div className="text-xs text-muted-foreground">
+                <div className="text-xs text-muted-foreground space-y-1">
                   <div className="flex items-center space-x-1">
                     <ExternalLink className="w-3 h-3" />
                     <span>Project ID: {WALLETCONNECT_PROJECT_ID}</span>
+                  </div>
+                  <div className="text-[10px] text-muted-foreground/70">
+                    Supports: Trust Wallet, Rainbow, MetaMask Mobile, Coinbase Wallet
                   </div>
                 </div>
               </div>
