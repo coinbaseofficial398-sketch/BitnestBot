@@ -3,20 +3,38 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Calculator, CreditCard } from "lucide-react";
+import { Calculator, CreditCard, Wallet } from "lucide-react";
 import { useState } from "react";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 
+interface InvestmentProduct {
+  name: string;
+  minAmount: number;
+  maxAmount: number;
+  duration: number;
+  apy: number;
+  description: string;
+  features: string[];
+}
+
+interface InvestmentProducts {
+  [key: string]: InvestmentProduct;
+}
+
 export default function InvestmentCalculator() {
   const [amount, setAmount] = useState("1000");
-  const [period, setPeriod] = useState("30");
   const [productType, setProductType] = useState("BitNest Savings");
   const [result, setResult] = useState<any>(null);
   const [showPayment, setShowPayment] = useState(false);
   
   const { toast } = useToast();
+  
+  // Fetch investment products
+  const { data: products } = useQuery<InvestmentProducts>({
+    queryKey: ["/api/investments/products"],
+  });
 
   const calculateMutation = useMutation({
     mutationFn: async (data: any) => {
@@ -41,7 +59,7 @@ export default function InvestmentCalculator() {
 
   const paymentMutation = useMutation({
     mutationFn: async (data: any) => {
-      const response = await apiRequest("POST", "/api/payment/process", data);
+      const response = await apiRequest("POST", "/api/investments/create", data);
       return response.json();
     },
     onSuccess: (data) => {
@@ -68,15 +86,38 @@ export default function InvestmentCalculator() {
 
   const processPayment = () => {
     paymentMutation.mutate({
+      userId: "demo-user-id",
+      productType,
       amount,
-      token: "USDT"
+      walletAddress: "0x742d35Cc6BF4532A8B1B2f9e4a1234567890A4B8"
     });
   };
 
   const handleCalculate = () => {
+    if (!products || !products[productType]) {
+      toast({
+        title: "Error",
+        description: "Product information not loaded",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    const product = products[productType]!;
+    const investAmount = parseFloat(amount);
+    
+    if (investAmount < product.minAmount || investAmount > product.maxAmount) {
+      toast({
+        title: "Invalid Amount",
+        description: `Amount must be between $${product.minAmount} and $${product.maxAmount.toLocaleString()}`,
+        variant: "destructive",
+      });
+      return;
+    }
+    
     calculateMutation.mutate({
       amount,
-      period: parseInt(period),
+      period: product.duration,
       productType,
     });
   };
@@ -103,20 +144,6 @@ export default function InvestmentCalculator() {
             />
           </div>
           
-          <div>
-            <Label htmlFor="period" className="block text-sm font-medium mb-2">Investment Period (Days)</Label>
-            <Select value={period} onValueChange={setPeriod}>
-              <SelectTrigger className="w-full bg-input border-border" data-testid="select-period">
-                <SelectValue placeholder="Select period" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="30">30 days</SelectItem>
-                <SelectItem value="90">90 days</SelectItem>
-                <SelectItem value="180">180 days</SelectItem>
-                <SelectItem value="365">365 days</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
           
           <div>
             <Label htmlFor="product" className="block text-sm font-medium mb-2">Product Type</Label>
@@ -125,12 +152,25 @@ export default function InvestmentCalculator() {
                 <SelectValue placeholder="Select product" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="BitNest Savings">BitNest Savings (5-8% APY)</SelectItem>
-                <SelectItem value="BitNest Loop">BitNest Loop (8-12% APY)</SelectItem>
-                <SelectItem value="BitNest Lease">BitNest Lease (10-15% APY)</SelectItem>
+                {products && Object.entries(products).map(([key, product]) => (
+                  <SelectItem key={key} value={key}>
+                    {product.name} ({product.apy}% APY - {product.duration} days)
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
+          
+          {products && products[productType] && (
+            <div className="bg-muted rounded-lg p-3">
+              <div className="text-sm font-medium mb-1">{products[productType]!.name} Details:</div>
+              <div className="text-xs text-muted-foreground space-y-1">
+                <div>• Duration: {products[productType]!.duration} days</div>
+                <div>• Min/Max: ${products[productType]!.minAmount.toLocaleString()} - ${products[productType]!.maxAmount.toLocaleString()}</div>
+                <div>• APY: {products[productType]!.apy}%</div>
+              </div>
+            </div>
+          )}
           
           <Button 
             onClick={handleCalculate}

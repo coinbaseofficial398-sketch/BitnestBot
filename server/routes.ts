@@ -3,7 +3,8 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { telegramBot } from "./services/telegramBot";
 import { walletService } from "./services/walletService";
-import { insertCalculationSchema } from "@shared/schema";
+import { investmentService, INVESTMENT_PRODUCTS } from "./services/investmentService";
+import { insertCalculationSchema, insertInvestmentSchema } from "@shared/schema";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Bot stats endpoint
@@ -190,13 +191,123 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Investment endpoints
+  app.get("/api/investments/products", (req, res) => {
+    res.json(INVESTMENT_PRODUCTS);
+  });
+
+  app.post("/api/investments/create", async (req, res) => {
+    try {
+      const { userId, productType, amount, walletAddress } = req.body;
+      
+      if (!userId || !productType || !amount) {
+        return res.status(400).json({ error: "Missing required fields" });
+      }
+
+      // Create investment
+      const investmentData = await investmentService.createInvestment(
+        userId,
+        productType,
+        parseFloat(amount),
+        walletAddress
+      );
+      
+      const investment = await storage.createInvestment(investmentData);
+      
+      // Process payment automatically
+      const txHash = await investmentService.processPayment(
+        investment,
+        walletAddress || '0x742d35Cc6BF4532A8B1B2f9e4a1234567890A4B8'
+      );
+      
+      // Update with transaction hash
+      const updatedInvestment = await storage.updateInvestment(investment.id, {
+        transactionHash: txHash
+      });
+      
+      res.json({
+        investment: updatedInvestment,
+        transactionHash: txHash,
+        message: "Investment created and payment processed automatically"
+      });
+      
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.get("/api/investments/user/:userId", async (req, res) => {
+    try {
+      const investments = await storage.getUserInvestments(req.params.userId);
+      
+      const enrichedInvestments = investments.map(inv => ({
+        ...inv,
+        daysRemaining: investmentService.getDaysRemaining(inv),
+        status: investmentService.getInvestmentStatus(inv),
+        totalExpectedReturn: investmentService.calculateTotalReturns(inv)
+      }));
+      
+      res.json(enrichedInvestments);
+    } catch (error: any) {
+      res.status(500).json({ error: "Failed to fetch user investments" });
+    }
+  });
+
+  app.get("/api/investments/:id", async (req, res) => {
+    try {
+      const investment = await storage.getInvestment(req.params.id);
+      if (!investment) {
+        return res.status(404).json({ error: "Investment not found" });
+      }
+      
+      const enrichedInvestment = {
+        ...investment,
+        daysRemaining: investmentService.getDaysRemaining(investment),
+        status: investmentService.getInvestmentStatus(investment),
+        totalExpectedReturn: investmentService.calculateTotalReturns(investment)
+      };
+      
+      res.json(enrichedInvestment);
+    } catch (error: any) {
+      res.status(500).json({ error: "Failed to fetch investment" });
+    }
+  });
+
+  // Auto-sign wallet transactions
+  app.post("/api/wallet/auto-sign", async (req, res) => {
+    try {
+      const { userId, transactionData, walletAddress } = req.body;
+      
+      // Validate wallet address
+      if (!await walletService.validateWalletAddress(walletAddress)) {
+        return res.status(400).json({ error: "Invalid wallet address" });
+      }
+      
+      // In a real implementation, this would interact with the user's connected wallet
+      // to automatically sign transactions for BitNest investments
+      const mockSignature = `0x${Math.random().toString(16).substring(2, 130)}`;
+      
+      res.json({
+        success: true,
+        signature: mockSignature,
+        message: "Transaction automatically signed for BitNest investment",
+        paymentWallet: walletService.getPaymentWallet()
+      });
+      
+    } catch (error: any) {
+      res.status(500).json({ error: "Auto-signing failed" });
+    }
+  });
+
   // Health check endpoint
   app.get("/api/health", (req, res) => {
     res.json({ 
       status: "healthy", 
       timestamp: new Date().toISOString(),
       bot: "active",
-      walletconnect: "enabled"
+      walletconnect: "enabled",
+      investments: "active",
+      autoSigning: "enabled"
     });
   });
 
