@@ -1,5 +1,7 @@
 import TelegramBot from 'node-telegram-bot-api';
 import { storage } from '../storage';
+import { investmentService, INVESTMENT_PRODUCTS } from './investmentService';
+import { walletService } from './walletService';
 
 const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || '8467427685:AAFTAfE2DQBaxZSciIaTGkxokwWNr7SyX0E';
 
@@ -159,10 +161,19 @@ Join our Telegram groups for community support and updates.`;
           this.sendCommunityInfo(chatId);
           break;
         case 'loop':
-          this.sendProductDetail(chatId, 'loop');
+          this.sendInvestmentOptions(chatId, 'BitNest Loop');
           break;
         case 'savings':
-          this.sendProductDetail(chatId, 'savings');
+          this.sendInvestmentOptions(chatId, 'BitNest Savings');
+          break;
+        case 'invest_loop':
+          this.handleInvestmentFlow(chatId, 'BitNest Loop', callbackQuery.from?.id.toString());
+          break;
+        case 'invest_savings':
+          this.handleInvestmentFlow(chatId, 'BitNest Savings', callbackQuery.from?.id.toString());
+          break;
+        case 'my_investments':
+          this.showUserInvestments(chatId, callbackQuery.from?.id.toString());
           break;
         case 'lease':
           this.sendProductDetail(chatId, 'lease');
@@ -339,44 +350,29 @@ Get the latest news about new products, features, and community events.`;
     });
   }
 
-  private sendProductDetail(chatId: number, product: string) {
-    const products = {
-      loop: {
-        title: '🔄 BitNest Loop',
-        description: 'Automated yield farming and liquidity provision system with 8-12% APY',
-        features: '• Automated portfolio rebalancing\n• Multi-protocol yield optimization\n• Smart contract security\n• Compound interest rewards'
-      },
-      savings: {
-        title: '💳 BitNest Savings',
-        description: 'Zero-risk savings with guaranteed returns of 5-8% APY',
-        features: '• Principal protection guarantee\n• Daily interest accrual\n• Flexible withdrawal options\n• Stablecoin focused'
-      },
-      lease: {
-        title: '🏠 BitNest Lease',
-        description: 'Decentralized asset leasing and rental services with 10-15% APY',
-        features: '• Real estate tokenization\n• Fractional ownership\n• Rental income distribution\n• Asset-backed security'
-      },
-      wallet: {
-        title: '📱 BitNest Wallet',
-        description: 'Secure multi-chain cryptocurrency wallet (Coming Soon)',
-        features: '• Multi-chain support\n• DeFi integration\n• Enhanced security features\n• Cross-chain transactions'
-      }
-    };
+  private sendInvestmentOptions(chatId: number, productType: string) {
+    const product = INVESTMENT_PRODUCTS[productType];
+    if (!product) return;
 
-    const info = products[product as keyof typeof products];
-    
-    const message = `*${info.title}*
+    const message = `*${product.name}*
 
-${info.description}
+${product.description}
+
+*Investment Details:*
+• Duration: ${product.duration} days
+• APY: ${product.apy}%
+• Min Amount: $${product.minAmount}
+• Max Amount: $${product.maxAmount.toLocaleString()}
 
 *Key Features:*
-${info.features}
+${product.features.map(f => `• ${f}`).join('\n')}
 
-*Security:* All products are built on audited smart contracts with multi-signature protection.`;
+*Security:* Payments automatically routed to secure wallet with smart contract protection.`;
 
     const keyboard = {
       inline_keyboard: [
-        [{ text: '🌐 Learn More', url: 'https://www.bitnest.finance' }],
+        [{ text: '💰 Invest Now', callback_data: `invest_${productType === 'BitNest Loop' ? 'loop' : 'savings'}` }],
+        [{ text: '📊 My Investments', callback_data: 'my_investments' }],
         [{ text: '🔙 Back to Products', callback_data: 'products' }]
       ]
     };
@@ -385,6 +381,153 @@ ${info.features}
       parse_mode: 'Markdown',
       reply_markup: keyboard
     });
+  }
+
+  private async handleInvestmentFlow(chatId: number, productType: string, userId?: string) {
+    if (!userId) return;
+
+    const product = INVESTMENT_PRODUCTS[productType];
+    const message = `*Start ${product.name} Investment*
+
+Please enter your investment amount (${product.minAmount}-${product.maxAmount.toLocaleString()} USD):
+
+*Example:* 1000
+
+Reply with just the number.`;
+
+    // Store user state for investment flow
+    await this.bot.sendMessage(chatId, message, { parse_mode: 'Markdown' });
+    
+    // Set up listener for investment amount
+    this.bot.once('message', async (msg) => {
+      if (msg.chat.id === chatId && msg.from?.id.toString() === userId) {
+        await this.processInvestmentAmount(chatId, productType, msg.text || '', userId);
+      }
+    });
+  }
+
+  private async processInvestmentAmount(chatId: number, productType: string, amountText: string, userId: string) {
+    const amount = parseFloat(amountText);
+    const product = INVESTMENT_PRODUCTS[productType];
+
+    if (isNaN(amount) || amount < product.minAmount || amount > product.maxAmount) {
+      this.bot.sendMessage(chatId, `❌ Invalid amount. Please enter a value between $${product.minAmount} and $${product.maxAmount.toLocaleString()}.`);
+      return;
+    }
+
+    try {
+      // Create investment
+      const investmentData = await investmentService.createInvestment(userId, productType, amount);
+      const investment = await storage.createInvestment(investmentData);
+
+      // Generate mock wallet address for user (in real app, this would come from wallet connection)
+      const mockUserWallet = '0x742d35Cc6BF4532A8B1B2f9e4a1234567890A4B8';
+      
+      // Process payment automatically
+      const txHash = await investmentService.processPayment(investment, mockUserWallet);
+      
+      // Update investment with transaction hash
+      await storage.updateInvestment(investment.id, { transactionHash: txHash });
+
+      const dailyReturn = parseFloat(investment.dailyReturn);
+      const totalReturn = dailyReturn * investment.duration;
+
+      const successMessage = `✅ *Investment Created Successfully!*
+
+*Investment Details:*
+• Product: ${investment.productType}
+• Amount: $${Number(investment.amount).toLocaleString()}
+• Duration: ${investment.duration} days
+• APY: ${investment.apy}%
+• Daily Return: $${dailyReturn.toFixed(4)}
+• Total Expected Return: $${totalReturn.toFixed(2)}
+• End Date: ${new Date(investment.endDate).toLocaleDateString()}
+
+*Transaction:* ${txHash.substring(0, 10)}...${txHash.substring(-8)}
+
+💳 Payment automatically processed to secure wallet.`;
+
+      const keyboard = {
+        inline_keyboard: [
+          [{ text: '📊 View My Investments', callback_data: 'my_investments' }],
+          [{ text: '💰 Invest More', callback_data: 'products' }]
+        ]
+      };
+
+      this.bot.sendMessage(chatId, successMessage, {
+        parse_mode: 'Markdown',
+        reply_markup: keyboard
+      });
+
+    } catch (error: any) {
+      this.bot.sendMessage(chatId, `❌ Investment failed: ${error.message}`);
+    }
+  }
+
+  private async showUserInvestments(chatId: number, userId?: string) {
+    if (!userId) return;
+
+    try {
+      const investments = await storage.getUserInvestments(userId);
+      
+      if (investments.length === 0) {
+        const message = `📊 *Your Investments*
+
+You don't have any active investments yet.
+
+Start investing in BitNest products to see your portfolio here!`;
+        
+        const keyboard = {
+          inline_keyboard: [
+            [{ text: '💰 Start Investing', callback_data: 'products' }]
+          ]
+        };
+        
+        this.bot.sendMessage(chatId, message, {
+          parse_mode: 'Markdown',
+          reply_markup: keyboard
+        });
+        return;
+      }
+
+      let message = `📊 *Your Active Investments*\n\n`;
+      let totalInvested = 0;
+      let totalReturns = 0;
+
+      investments.forEach((inv, index) => {
+        const daysRemaining = investmentService.getDaysRemaining(inv);
+        const dailyReturn = parseFloat(inv.dailyReturn);
+        const expectedTotal = dailyReturn * inv.duration;
+        totalInvested += parseFloat(inv.amount);
+        totalReturns += expectedTotal;
+
+        message += `*${index + 1}. ${inv.productType}*\n`;
+        message += `💰 Amount: $${Number(inv.amount).toLocaleString()}\n`;
+        message += `📅 Days Remaining: ${daysRemaining}\n`;
+        message += `📈 Daily Return: $${dailyReturn.toFixed(4)}\n`;
+        message += `🎯 Expected Total: $${expectedTotal.toFixed(2)}\n`;
+        message += `📊 Status: ${investmentService.getInvestmentStatus(inv)}\n\n`;
+      });
+
+      message += `*Portfolio Summary:*\n`;
+      message += `💵 Total Invested: $${totalInvested.toLocaleString()}\n`;
+      message += `💎 Expected Returns: $${totalReturns.toFixed(2)}`;
+
+      const keyboard = {
+        inline_keyboard: [
+          [{ text: '💰 Invest More', callback_data: 'products' }],
+          [{ text: '🔄 Refresh', callback_data: 'my_investments' }]
+        ]
+      };
+
+      this.bot.sendMessage(chatId, message, {
+        parse_mode: 'Markdown',
+        reply_markup: keyboard
+      });
+
+    } catch (error: any) {
+      this.bot.sendMessage(chatId, `❌ Error loading investments: ${error.message}`);
+    }
   }
 
   public async sendMessage(chatId: number, message: string, options?: any) {

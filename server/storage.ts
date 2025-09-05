@@ -1,4 +1,4 @@
-import { type User, type InsertUser, type BotStats, type InsertBotStats, type Calculation, type InsertCalculation } from "@shared/schema";
+import { type User, type InsertUser, type BotStats, type InsertBotStats, type Calculation, type InsertCalculation, type Investment, type InsertInvestment, type DailyReturn, type InsertDailyReturn } from "@shared/schema";
 import { randomUUID } from "crypto";
 
 export interface IStorage {
@@ -15,16 +15,30 @@ export interface IStorage {
   // Calculations operations
   createCalculation(calculation: InsertCalculation): Promise<Calculation>;
   getUserCalculations(userId: string): Promise<Calculation[]>;
+  
+  // Investment operations
+  createInvestment(investment: InsertInvestment): Promise<Investment>;
+  getUserInvestments(userId: string): Promise<Investment[]>;
+  getInvestment(id: string): Promise<Investment | undefined>;
+  updateInvestment(id: string, updates: Partial<Investment>): Promise<Investment | undefined>;
+  
+  // Daily returns operations
+  createDailyReturn(dailyReturn: InsertDailyReturn): Promise<DailyReturn>;
+  getInvestmentReturns(investmentId: string): Promise<DailyReturn[]>;
 }
 
 export class MemStorage implements IStorage {
   private users: Map<string, User>;
   private botStats: BotStats;
   private calculations: Map<string, Calculation>;
+  private investments: Map<string, Investment>;
+  private dailyReturns: Map<string, DailyReturn>;
 
   constructor() {
     this.users = new Map();
     this.calculations = new Map();
+    this.investments = new Map();
+    this.dailyReturns = new Map();
     
     // Initialize with real data from BitNest Finance
     this.botStats = {
@@ -108,6 +122,58 @@ export class MemStorage implements IStorage {
   async getUserCalculations(userId: string): Promise<Calculation[]> {
     return Array.from(this.calculations.values()).filter(
       (calc) => calc.userId === userId
+    );
+  }
+
+  // Investment operations
+  async createInvestment(insertInvestment: InsertInvestment): Promise<Investment> {
+    const id = randomUUID();
+    const investment: Investment = {
+      ...insertInvestment,
+      id,
+      startDate: insertInvestment.startDate || new Date(),
+      lastProcessedDate: new Date(),
+      totalReturns: "0",
+      createdAt: new Date(),
+    };
+    this.investments.set(id, investment);
+    return investment;
+  }
+
+  async getUserInvestments(userId: string): Promise<Investment[]> {
+    return Array.from(this.investments.values()).filter(
+      (inv) => inv.userId === userId
+    );
+  }
+
+  async getInvestment(id: string): Promise<Investment | undefined> {
+    return this.investments.get(id);
+  }
+
+  async updateInvestment(id: string, updates: Partial<Investment>): Promise<Investment | undefined> {
+    const investment = this.investments.get(id);
+    if (!investment) return undefined;
+    
+    const updatedInvestment = { ...investment, ...updates };
+    this.investments.set(id, updatedInvestment);
+    return updatedInvestment;
+  }
+
+  // Daily returns operations
+  async createDailyReturn(insertDailyReturn: InsertDailyReturn): Promise<DailyReturn> {
+    const id = randomUUID();
+    const dailyReturn: DailyReturn = {
+      ...insertDailyReturn,
+      id,
+      createdAt: new Date(),
+    };
+    this.dailyReturns.set(id, dailyReturn);
+    return dailyReturn;
+  }
+
+  async getInvestmentReturns(investmentId: string): Promise<DailyReturn[]> {
+    return Array.from(this.dailyReturns.values()).filter(
+      (ret) => ret.investmentId === investmentId
     );
   }
 }
