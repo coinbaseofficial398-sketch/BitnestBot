@@ -176,9 +176,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/liquidity", async (req, res) => {
     try {
       const balance = await walletService.getLiquidityBalance();
+      const txCount = await walletService.getBSCTransactionCount(walletService.getLiquidityWallet());
       res.json({ 
         balance,
         wallet: walletService.getLiquidityWallet(),
+        network: "BSC",
+        transactionCount: txCount,
+        bscscanUrl: `https://bscscan.com/address/${walletService.getLiquidityWallet()}`,
         timestamp: new Date().toISOString()
       });
     } catch (error) {
