@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Calculator } from "lucide-react";
+import { Calculator, CreditCard } from "lucide-react";
 import { useState } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
@@ -14,6 +14,7 @@ export default function InvestmentCalculator() {
   const [period, setPeriod] = useState("30");
   const [productType, setProductType] = useState("BitNest Savings");
   const [result, setResult] = useState<any>(null);
+  const [showPayment, setShowPayment] = useState(false);
   
   const { toast } = useToast();
 
@@ -37,6 +38,40 @@ export default function InvestmentCalculator() {
       });
     },
   });
+
+  const paymentMutation = useMutation({
+    mutationFn: async (data: any) => {
+      const response = await apiRequest("POST", "/api/payment/process", data);
+      return response.json();
+    },
+    onSuccess: (data) => {
+      toast({
+        title: "Payment Successful",
+        description: "Your investment has been processed securely.",
+      });
+      setShowPayment(false);
+    },
+    onError: () => {
+      toast({
+        title: "Payment Failed",
+        description: "Payment processing failed. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleInvest = () => {
+    if (result) {
+      setShowPayment(true);
+    }
+  };
+
+  const processPayment = () => {
+    paymentMutation.mutate({
+      amount,
+      token: "USDT"
+    });
+  };
 
   const handleCalculate = () => {
     calculateMutation.mutate({
@@ -126,6 +161,46 @@ export default function InvestmentCalculator() {
                   {result.apy}%
                 </span>
               </div>
+              {!showPayment ? (
+                <Button 
+                  onClick={handleInvest}
+                  className="w-full mt-4 bg-secondary text-secondary-foreground hover:bg-secondary/90"
+                  data-testid="button-invest-now"
+                >
+                  <CreditCard className="mr-2 h-4 w-4" />
+                  Invest Now
+                </Button>
+              ) : (
+                <div className="bg-primary/10 border border-primary/20 rounded-lg p-4 mt-4">
+                  <div className="text-center">
+                    <CreditCard className="mx-auto text-primary mb-2" size={24} />
+                    <p className="text-sm font-medium mb-2">Secure Payment Processing</p>
+                    <p className="text-xs text-muted-foreground mb-4">
+                      Payment will be processed securely to our verified wallet
+                    </p>
+                    <div className="flex space-x-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setShowPayment(false)}
+                        className="flex-1"
+                        data-testid="button-cancel-payment"
+                      >
+                        Cancel
+                      </Button>
+                      <Button
+                        size="sm"
+                        onClick={processPayment}
+                        disabled={paymentMutation.isPending}
+                        className="flex-1 bg-primary text-primary-foreground"
+                        data-testid="button-confirm-payment"
+                      >
+                        {paymentMutation.isPending ? "Processing..." : "Confirm Payment"}
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </div>

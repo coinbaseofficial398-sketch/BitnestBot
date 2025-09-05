@@ -36,6 +36,9 @@ export default function Dashboard() {
                 <div className="inline-block w-2 h-2 bg-accent rounded-full mr-2"></div>
                 Bot Active
               </span>
+              <span className="px-3 py-1 bg-primary/20 text-primary rounded-full text-xs font-medium">
+                WalletConnect Enabled
+              </span>
               <Button 
                 className="bg-primary text-primary-foreground hover:bg-primary/90"
                 onClick={() => window.open('https://t.me/BitNestFinanceBot', '_blank')}
@@ -83,10 +86,19 @@ export default function Dashboard() {
       <footer className="bg-card border-t border-border mt-12">
         <div className="container mx-auto px-4 py-8">
           <div className="text-center">
-            <div className="mb-4">
-              <span className="text-sm text-muted-foreground">Bot Token: </span>
-              <span className="font-mono text-xs bg-muted px-2 py-1 rounded">8467...SyX0E</span>
-              <span className="text-xs text-destructive ml-2">(Secured via Replit Secrets)</span>
+            <div className="mb-4 space-y-2">
+              <div>
+                <span className="text-sm text-muted-foreground">Bot Token: </span>
+                <span className="font-mono text-xs bg-muted px-2 py-1 rounded">8467...SyX0E</span>
+                <span className="text-xs text-destructive ml-2">(Secured via Replit Secrets)</span>
+              </div>
+              <div>
+                <span className="text-sm text-muted-foreground">WalletConnect ID: </span>
+                <span className="font-mono text-xs bg-muted px-2 py-1 rounded">56d7...93a1</span>
+              </div>
+              <div className="text-xs text-muted-foreground">
+                📊 Live liquidity from secure wallet | 💰 Payments auto-routed to verified address
+              </div>
             </div>
             <p className="text-sm text-muted-foreground">© 2022 BitNest Limited. All rights reserved</p>
             <p className="text-xs text-muted-foreground mt-2">Telegram Bot Dashboard for DeFi Services</p>

