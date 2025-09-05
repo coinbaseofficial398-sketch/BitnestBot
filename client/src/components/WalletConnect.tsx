@@ -48,30 +48,43 @@ export default function WalletConnect() {
       } else if (walletType === 'walletconnect') {
         // Force open WalletConnect modal and deep links
         try {
-          // Try to open common mobile wallet apps with deep links
+          // Enhanced deep linking for mobile wallet apps
           const walletApps = [
-            { name: 'Trust Wallet', url: `trust://wc?uri=${encodeURIComponent(walletConnectURI)}` },
-            { name: 'Rainbow', url: `rainbow://wc?uri=${encodeURIComponent(walletConnectURI)}` },
-            { name: 'MetaMask Mobile', url: `metamask://wc?uri=${encodeURIComponent(walletConnectURI)}` },
-            { name: 'Coinbase Wallet', url: `cbwallet://wc?uri=${encodeURIComponent(walletConnectURI)}` },
-            { name: 'WalletConnect', url: `wc://wc?uri=${encodeURIComponent(walletConnectURI)}` }
+            { name: 'Trust Wallet', url: `https://link.trustwallet.com/open_url?coin_id=60&url=https://bitnest.finance` },
+            { name: 'Rainbow', url: `https://rnbwapp.com/link?url=https://bitnest.finance` },
+            { name: 'MetaMask Mobile', url: `https://metamask.app.link/dapp/bitnest.finance` },
+            { name: 'Coinbase Wallet', url: `https://go.cb-w.com/dapp?cb_url=https://bitnest.finance` },
+            { name: 'WalletConnect', url: `wc:${walletConnectURI}` }
           ];
 
           // Detect if mobile device
           const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
           
           if (isMobile) {
-            // Try to open wallet apps on mobile
+            // Try to open wallet apps on mobile with intent handling
             walletApps.forEach((wallet, index) => {
               setTimeout(() => {
-                const link = document.createElement('a');
-                link.href = wallet.url;
-                link.click();
-              }, index * 500); // Stagger the attempts
+                // Create a temporary link and try to open it
+                const tempLink = document.createElement('a');
+                tempLink.href = wallet.url;
+                tempLink.target = '_blank';
+                tempLink.style.display = 'none';
+                document.body.appendChild(tempLink);
+                tempLink.click();
+                document.body.removeChild(tempLink);
+                
+                // Also try window.open as fallback
+                if (index === 0) {
+                  setTimeout(() => {
+                    window.open(wallet.url, '_blank');
+                  }, 100);
+                }
+              }, index * 300);
             });
           } else {
-            // On desktop, show QR code and try to open wallet extensions
-            alert(`Scan this QR code with your mobile wallet:\n${walletConnectURI}`);
+            // On desktop, show QR code and provide mobile links
+            const qrMessage = `Scan this QR code with your mobile wallet:\n\n${walletConnectURI}\n\nOr open directly on mobile:\n• Trust: ${walletApps[0].url}\n• MetaMask: ${walletApps[2].url}`;
+            alert(qrMessage);
           }
         } catch (error) {
           console.log('WalletConnect error:', error);

@@ -181,6 +181,12 @@ Join our Telegram groups for community support and updates.`;
         case 'wallet_connect':
           this.sendProductDetail(chatId, 'wallet');
           break;
+        case 'wallet_connect_qr':
+          this.sendWalletConnectQR(chatId);
+          break;
+        case 'home':
+          this.sendHomeMessage(chatId);
+          break;
       }
     });
   }
@@ -195,8 +201,11 @@ Our decentralized finance ecosystem offers multiple zero-risk investment opportu
         [{ text: '🔄 BitNest Loop', callback_data: 'loop' }],
         [{ text: '💳 BitNest Savings', callback_data: 'savings' }],
         [{ text: '🏠 BitNest Lease', callback_data: 'lease' }],
-        [{ text: '📱 BitNest Wallet', callback_data: 'wallet_connect' }],
-        [{ text: '🌐 Visit Website', url: 'https://www.bitnest.finance' }]
+        [{ text: '📱 BitNest Wallet', callback_data: 'wallet' }],
+        [{ text: '🌐 Visit Website', url: 'https://www.bitnest.finance' }],
+        [
+          { text: '🏠 Home', callback_data: 'home' }
+        ]
       ]
     };
 
@@ -222,7 +231,11 @@ These numbers represent real-time data from our decentralized ecosystem.`;
     const keyboard = {
       inline_keyboard: [
         [{ text: '🔄 Refresh Stats', callback_data: 'stats' }],
-        [{ text: '💰 View Products', callback_data: 'products' }]
+        [{ text: '💰 View Products', callback_data: 'products' }],
+        [
+          { text: '🏠 Home', callback_data: 'home' },
+          { text: '🔙 Back', callback_data: 'home' }
+        ]
       ]
     };
 
@@ -238,9 +251,11 @@ These numbers represent real-time data from our decentralized ecosystem.`;
 Connect your cryptocurrency wallet to access BitNest DeFi features:
 
 *Supported Wallets:*
-• MetaMask (Browser extension)
-• WalletConnect (Mobile & Desktop)
-• BitNest Wallet (Coming soon)
+• MetaMask (Browser extension & Mobile)
+• Trust Wallet (Mobile)
+• Coinbase Wallet (Mobile)
+• Rainbow Wallet (Mobile)
+• WalletConnect (Universal)
 
 *Benefits:*
 • Secure transactions
@@ -250,9 +265,19 @@ Connect your cryptocurrency wallet to access BitNest DeFi features:
 
     const keyboard = {
       inline_keyboard: [
-        [{ text: '🦊 Connect MetaMask', url: 'https://metamask.io/' }],
-        [{ text: '📱 WalletConnect', url: 'https://walletconnect.com/' }],
-        [{ text: '📱 BitNest Wallet (Soon)', callback_data: 'wallet_connect' }]
+        [
+          { text: '🦊 MetaMask Mobile', url: 'https://metamask.app.link/dapp/bitnest.finance' },
+          { text: '🛡️ Trust Wallet', url: 'https://link.trustwallet.com/open_url?coin_id=60&url=https://bitnest.finance' }
+        ],
+        [
+          { text: '🌈 Rainbow', url: 'https://rnbwapp.com/link?url=https://bitnest.finance' },
+          { text: '💙 Coinbase Wallet', url: 'https://go.cb-w.com/dapp?cb_url=https://bitnest.finance' }
+        ],
+        [{ text: '📱 WalletConnect', callback_data: 'wallet_connect_qr' }],
+        [
+          { text: '🏠 Home', callback_data: 'home' },
+          { text: '🔙 Back', callback_data: 'products' }
+        ]
       ]
     };
 
@@ -283,7 +308,11 @@ Estimated Return: ~15 USDT
     const keyboard = {
       inline_keyboard: [
         [{ text: '🌐 Use Web Calculator', url: 'https://www.bitnest.finance' }],
-        [{ text: '💰 View Products', callback_data: 'products' }]
+        [{ text: '💰 View Products', callback_data: 'products' }],
+        [
+          { text: '🏠 Home', callback_data: 'home' },
+          { text: '🔙 Back', callback_data: 'home' }
+        ]
       ]
     };
 
@@ -311,7 +340,11 @@ A: We support MetaMask, WalletConnect, and most major cryptocurrency wallets.`;
     const keyboard = {
       inline_keyboard: [
         [{ text: '📖 Full Documentation', url: 'https://www.bitnest.finance' }],
-        [{ text: '💬 Ask Community', callback_data: 'community' }]
+        [{ text: '💬 Ask Community', callback_data: 'community' }],
+        [
+          { text: '🏠 Home', callback_data: 'home' },
+          { text: '🔙 Back', callback_data: 'home' }
+        ]
       ]
     };
 
@@ -340,7 +373,11 @@ Get the latest news about new products, features, and community events.`;
         [{ text: '💬 Telegram Groups', url: 'https://t.me/bitnestfinance' }],
         [{ text: '📰 Telegram News', url: 'https://t.me/bitnestnews' }],
         [{ text: '🌐 Official Website', url: 'https://www.bitnest.finance' }],
-        [{ text: '📄 WhitePaper', url: 'https://www.bitnest.finance' }]
+        [{ text: '📄 WhitePaper', url: 'https://www.bitnest.finance' }],
+        [
+          { text: '🏠 Home', callback_data: 'home' },
+          { text: '🔙 Back', callback_data: 'home' }
+        ]
       ]
     };
 
@@ -373,7 +410,10 @@ ${product.features.map(f => `• ${f}`).join('\n')}
       inline_keyboard: [
         [{ text: '💰 Invest Now', callback_data: `invest_${productType === 'BitNest Loop' ? 'loop' : 'savings'}` }],
         [{ text: '📊 My Investments', callback_data: 'my_investments' }],
-        [{ text: '🔙 Back to Products', callback_data: 'products' }]
+        [{ text: '🔙 Back to Products', callback_data: 'products' }],
+        [
+          { text: '🏠 Home', callback_data: 'home' }
+        ]
       ]
     };
 
@@ -516,7 +556,11 @@ Start investing in BitNest products to see your portfolio here!`;
       const keyboard = {
         inline_keyboard: [
           [{ text: '💰 Invest More', callback_data: 'products' }],
-          [{ text: '🔄 Refresh', callback_data: 'my_investments' }]
+          [{ text: '🔄 Refresh', callback_data: 'my_investments' }],
+          [
+            { text: '🏠 Home', callback_data: 'home' },
+            { text: '🔙 Back', callback_data: 'products' }
+          ]
         ]
       };
 
@@ -532,6 +576,107 @@ Start investing in BitNest products to see your portfolio here!`;
 
   public async sendMessage(chatId: number, message: string, options?: any) {
     return this.bot.sendMessage(chatId, message, options);
+  }
+
+  private sendHomeMessage(chatId: number) {
+    const welcomeMessage = `🏠 *Welcome to BitNest Finance!*
+
+Explore our DeFi ecosystem with zero-risk financial services.
+
+BitNest is a decentralized finance (DeFi) platform providing secure, transparent, and inclusive financial services through blockchain technology.
+
+*Quick Actions:*`;
+
+    const keyboard = {
+      inline_keyboard: [
+        [
+          { text: '📊 View Stats', callback_data: 'stats' },
+          { text: '💰 Products', callback_data: 'products' }
+        ],
+        [
+          { text: '🔗 Connect Wallet', callback_data: 'wallet' },
+          { text: '🧮 Calculator', callback_data: 'calculate' }
+        ],
+        [
+          { text: '❓ FAQ', callback_data: 'faq' },
+          { text: '👥 Community', callback_data: 'community' }
+        ]
+      ]
+    };
+
+    this.bot.sendMessage(chatId, welcomeMessage, {
+      parse_mode: 'Markdown',
+      reply_markup: keyboard
+    });
+  }
+
+  private sendWalletConnectQR(chatId: number) {
+    const qrData = `wc:${Math.random().toString(36).substring(2)}@2?relay-protocol=irn&symKey=${Math.random().toString(36).substring(2)}`;
+    
+    const message = `*📱 WalletConnect QR Code:*
+
+Scan this QR code with your mobile wallet app:
+
+\`\`\`
+${qrData}
+\`\`\`
+
+*Or open directly in these apps:*`;
+
+    const keyboard = {
+      inline_keyboard: [
+        [
+          { text: '🦊 MetaMask', url: `https://metamask.app.link/wc?uri=${encodeURIComponent(qrData)}` },
+          { text: '🛡️ Trust', url: `https://link.trustwallet.com/wc?uri=${encodeURIComponent(qrData)}` }
+        ],
+        [
+          { text: '🌈 Rainbow', url: `https://rnbwapp.com/wc?uri=${encodeURIComponent(qrData)}` },
+          { text: '💙 Coinbase', url: `https://go.cb-w.com/wc?uri=${encodeURIComponent(qrData)}` }
+        ],
+        [
+          { text: '🏠 Home', callback_data: 'home' },
+          { text: '🔙 Back', callback_data: 'wallet' }
+        ]
+      ]
+    };
+
+    this.bot.sendMessage(chatId, message, {
+      parse_mode: 'Markdown',
+      reply_markup: keyboard
+    });
+  }
+
+  private sendProductDetail(chatId: number, productType: string) {
+    if (productType === 'lease') {
+      const message = `*🏠 BitNest Lease*
+
+Innovative asset leasing through blockchain technology.
+
+*Key Features:*
+• Decentralized asset management
+• Flexible lease terms
+• Automated smart contracts
+• Zero-risk collateral protection
+
+*Coming Soon:* Full lease marketplace integration`;
+
+      const keyboard = {
+        inline_keyboard: [
+          [{ text: '📧 Get Notified', url: 'https://www.bitnest.finance/notify' }],
+          [
+            { text: '🏠 Home', callback_data: 'home' },
+            { text: '🔙 Back', callback_data: 'products' }
+          ]
+        ]
+      };
+
+      this.bot.sendMessage(chatId, message, {
+        parse_mode: 'Markdown',
+        reply_markup: keyboard
+      });
+    } else if (productType === 'wallet') {
+      this.sendWalletInfo(chatId);
+    }
   }
 
   public getBot() {
