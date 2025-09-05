@@ -1,5 +1,5 @@
 import { Card, CardContent } from "@/components/ui/card";
-import { Users, TrendingUp, Droplet } from "lucide-react";
+import { Users, TrendingUp, Droplet, Wifi } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 
 interface StatsProps {
@@ -63,9 +63,13 @@ export default function LiveStats({ stats, isLoading }: StatsProps) {
             <Droplet className="text-accent text-xl" />
           </div>
           <div className="text-3xl font-bold gradient-text" data-testid="text-liquidity">
-            {stats?.liquidity ? `${Number(stats.liquidity).toLocaleString()} USDT` : "22,673,861 USDT"}
+            {stats?.liquidity ? `${Number(stats.liquidity).toLocaleString()} ETH` : "22,673,861 USDT"}
           </div>
-          <p className="text-sm text-muted-foreground mt-2">Available liquidity pool</p>
+          <div className="flex items-center space-x-1 mt-2">
+            <Wifi className="w-3 h-3 text-accent" />
+            <p className="text-xs text-muted-foreground">Live from 0x92b7...3121</p>
+          </div>
+          <p className="text-sm text-muted-foreground">Available liquidity pool</p>
         </CardContent>
       </Card>
     </div>

@@ -49,7 +49,11 @@ export class MemStorage implements IStorage {
   async createUser(insertUser: InsertUser): Promise<User> {
     const id = randomUUID();
     const user: User = { 
-      ...insertUser, 
+      ...insertUser,
+      username: insertUser.username || null,
+      firstName: insertUser.firstName || null,
+      lastName: insertUser.lastName || null,
+      walletAddress: insertUser.walletAddress || null,
       id, 
       createdAt: new Date(),
       isActive: true 
@@ -68,6 +72,15 @@ export class MemStorage implements IStorage {
   }
 
   async getBotStats(): Promise<BotStats> {
+    // Update liquidity with live data from the specified wallet
+    try {
+      const { walletService } = await import('./services/walletService');
+      const liveLiquidity = await walletService.getLiquidityBalance();
+      this.botStats.liquidity = liveLiquidity;
+      this.botStats.updatedAt = new Date();
+    } catch (error: any) {
+      console.log('Could not fetch live liquidity, using cached value');
+    }
     return this.botStats;
   }
 
@@ -84,6 +97,7 @@ export class MemStorage implements IStorage {
     const id = randomUUID();
     const calculation: Calculation = {
       ...insertCalculation,
+      userId: insertCalculation.userId || null,
       id,
       createdAt: new Date(),
     };
