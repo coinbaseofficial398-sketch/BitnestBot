@@ -10,8 +10,14 @@ import SocialLinks from "@/components/SocialLinks";
 import { Button } from "@/components/ui/button";
 import { Box, Forward } from "lucide-react";
 
+interface BotStats {
+  participants: number;
+  participantIncome: string;
+  liquidity: string;
+}
+
 export default function Dashboard() {
-  const { data: stats, isLoading } = useQuery({
+  const { data: stats, isLoading } = useQuery<BotStats>({
     queryKey: ["/api/bot/stats"],
     refetchInterval: 30000, // Refresh every 30 seconds
   });

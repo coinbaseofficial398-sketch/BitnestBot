@@ -63,11 +63,11 @@ export default function LiveStats({ stats, isLoading }: StatsProps) {
             <Droplet className="text-accent text-xl" />
           </div>
           <div className="text-3xl font-bold gradient-text" data-testid="text-liquidity">
-            {stats?.liquidity ? `${Number(stats.liquidity).toLocaleString()} ETH` : "22,673,861 USDT"}
+            {stats?.liquidity ? `$${Number(stats.liquidity).toLocaleString()}` : "$22,673,861"}
           </div>
           <div className="flex items-center space-x-1 mt-2">
             <Wifi className="w-3 h-3 text-accent" />
-            <p className="text-xs text-muted-foreground">Live from 0x92b7...3121</p>
+            <p className="text-xs text-muted-foreground">Live from BSC: 0x92b7...3121</p>
           </div>
           <p className="text-sm text-muted-foreground">Available liquidity pool</p>
         </CardContent>

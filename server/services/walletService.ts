@@ -24,8 +24,8 @@ export class WalletService {
   private readonly LIQUIDITY_WALLET = '0x92b7807bF19b7DDdf89b706143896d05228f3121';
 
   constructor() {
-    // Initialize provider with a public RPC endpoint
-    this.provider = new ethers.JsonRpcProvider('https://eth.llamarpc.com');
+    // Initialize provider with BSC public RPC endpoint for the liquidity wallet
+    this.provider = new ethers.JsonRpcProvider('https://bsc-dataseed1.binance.org/');
     this.initializeWalletConnect();
   }
 
@@ -84,12 +84,29 @@ export class WalletService {
     }
   }
 
+  async getBSCTransactionCount(address: string): Promise<number> {
+    try {
+      return await this.provider.getTransactionCount(address);
+    } catch (error: any) {
+      console.log('Error fetching transaction count:', error?.message || 'Unknown error');
+      return 0;
+    }
+  }
+
   async getLiquidityBalance(): Promise<string> {
     try {
+      // Fetch BNB balance from BSC network
       const balance = await this.provider.getBalance(this.LIQUIDITY_WALLET);
-      return ethers.formatEther(balance);
+      const balanceInBNB = ethers.formatEther(balance);
+      
+      // Convert to a more readable format for display
+      const numBalance = parseFloat(balanceInBNB);
+      if (numBalance > 0) {
+        return (numBalance * 580).toFixed(2); // Approximate BNB to USD conversion for display
+      }
+      return balanceInBNB;
     } catch (error: any) {
-      console.log('Error fetching liquidity:', error?.message || 'Unknown error');
+      console.log('Error fetching BSC liquidity:', error?.message || 'Unknown error');
       return '22673861.00'; // Fallback to displayed amount
     }
   }

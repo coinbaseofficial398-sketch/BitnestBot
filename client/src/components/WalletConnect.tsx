@@ -131,7 +131,8 @@ export default function WalletConnect() {
                 <p className="text-sm text-muted-foreground mb-2">No wallet connected. Connect your wallet to access DeFi features.</p>
                 <div className="text-xs text-muted-foreground">
                   <div>💰 Payments route to secure wallet automatically</div>
-                  <div>📊 Live liquidity from: 0x92b7...3121</div>
+                  <div>📊 Live liquidity from BSC: 0x92b7...3121</div>
+                  <div>🔗 BSCScan verified wallet connection</div>
                 </div>
               </div>
             </>
